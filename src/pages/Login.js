@@ -1,54 +1,71 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, Loader2, AlertCircle, User, ShieldCheck } from 'lucide-react';
 import { API_BASE } from '../api';
+import {
+    Phone,
+    Lock,
+    Loader2,
+    AlertCircle,
+    ShieldCheck,
+    User
+} from 'lucide-react';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [userType, setUserType] = useState('customer'); // 'customer' or 'admin'
+    const [userType, setUserType] = useState('admin'); // 'customer' or 'admin'
+    const [step, setStep] = useState('phone'); // 'phone' or 'otp'
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
+    const handleSendOtp = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE}/auth/login`, {
+            const res = await fetch(`${API_BASE}/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ phone })
             });
 
-            const data = await response.json();
+            if (!res.ok) throw new Error('Failed to send OTP. Try again.');
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Invalid email or password');
-                }
-                throw new Error(data.error || 'Login failed');
-            }
+            setStep('otp');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            const res = await fetch(`${API_BASE}/auth/login-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Login failed');
 
             login(data.user, data.token);
 
-            // Debug logging
-            console.log('Login successful:', data.user);
-            console.log('User role:', data.user.role);
-
-            // Redirect based on role
+            // Redirect Logic
             if (data.user.role === 'admin') {
-                console.log('Redirecting to admin dashboard');
                 navigate('/admin-dashboard');
-            } else if (data.user.role === 'customer') {
-                console.log('Redirecting to customer dashboard');
-                navigate('/customer-dashboard');
             } else {
-                navigate('/');
+                navigate('/customer-dashboard');
             }
         } catch (err) {
             setError(err.message);
@@ -58,109 +75,99 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50/50 py-12 px-4 animate-fade-in">
             <div className="max-w-md w-full">
                 <div className="text-center mb-10">
-                    <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                        Welcome Back
-                    </h2>
+                    <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Hygienix Login</h2>
+                    <p className="text-slate-500 mt-2">Enter your phone number to continue</p>
                 </div>
 
-                <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/60 border border-slate-100/50 relative overflow-hidden group">
-                    {/* Background decoration */}
-                    <div className="absolute top-0 right-0 -tr-y-1/2 -tr-x-1/4 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
-
+                <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100">
                     {/* User Type Toggle */}
-                    <div className="flex bg-slate-50 p-1.5 rounded-2xl mb-8 relative z-10">
+                    <div className="flex bg-slate-50 p-1.5 rounded-2xl mb-8">
                         <button
                             type="button"
-                            onClick={() => setUserType('customer')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${userType === 'customer'
-                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200'
-                                : 'text-slate-500 hover:text-slate-700'
+                            onClick={() => { setUserType('customer'); setStep('phone'); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${userType === 'customer'
+                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200'
+                                    : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
-                            <User size={18} />
-                            Customer
+                            <User size={18} /> Customer
                         </button>
                         <button
                             type="button"
-                            onClick={() => setUserType('admin')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${userType === 'admin'
-                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200'
-                                : 'text-slate-500 hover:text-slate-700'
+                            onClick={() => { setUserType('admin'); setStep('phone'); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${userType === 'admin'
+                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-slate-200'
+                                    : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
-                            <ShieldCheck size={18} />
-                            Admin
+                            <ShieldCheck size={18} /> Admin
                         </button>
                     </div>
 
-                    <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
-                        {error && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-4 rounded-2xl flex items-center gap-3 animate-shake">
-                                <AlertCircle className="w-5 h-5 shrink-0" />
-                                <span className="text-sm font-bold">{error}</span>
-                            </div>
-                        )}
+                    {error && (
+                        <div className="mb-6 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-bold">
+                            <AlertCircle className="w-4 h-4" /> {error}
+                        </div>
+                    )}
 
-                        <div className="space-y-4">
+                    {step === 'phone' ? (
+                        <form onSubmit={handleSendOtp} className="space-y-6">
                             <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-500">
-                                    <Mail className="w-5 h-5" />
-                                </div>
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 w-5 h-5 transition-colors" />
                                 <input
-                                    type="email"
+                                    type="tel"
                                     required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-slate-900 font-medium placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
-                                    placeholder="Email address"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
+                                    placeholder="Phone Number (e.g., 9999999999)"
                                 />
                             </div>
-
+                            <button
+                                type="submit"
+                                disabled={loading || phone.length < 10}
+                                className="w-full py-4 bg-slate-900 hover:bg-emerald-600 text-white text-lg font-bold rounded-[1.25rem] shadow-lg shadow-slate-200 transition-all disabled:opacity-70 flex justify-center items-center"
+                            >
+                                {loading ? <Loader2 className="animate-spin" /> : 'Send OTP'}
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div className="text-center mb-4">
+                                <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">
+                                    OTP sent to {phone}
+                                </span>
+                            </div>
                             <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-500">
-                                    <Lock className="w-5 h-5" />
-                                </div>
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 w-5 h-5 transition-colors" />
                                 <input
-                                    type="password"
+                                    type="text"
                                     required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-slate-900 font-medium placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
-                                    placeholder="Password"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
+                                    placeholder="Enter OTP (Use 123456)"
                                 />
                             </div>
-                        </div>
-
-                        <div className="flex items-center justify-end">
-                            <Link to="/forgot-password" weight="bold" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition-all underline-offset-4">
-                                Forgot Password?
-                            </Link>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center py-4 px-4 bg-slate-900 hover:bg-emerald-600 text-white text-lg font-bold rounded-[1.25rem] shadow-xl shadow-slate-200 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
-                        >
-                            {loading ? (
-                                <Loader2 className="animate-spin w-6 h-6" />
-                            ) : (
-                                'Login'
-                            )}
-                        </button>
-                    </form>
-
-                    <div className="mt-10 pt-8 border-t border-slate-50 text-center relative z-10">
-                        <p className="text-slate-500 font-medium">
-                            Don't have an account?{' '}
-                            <Link to="/signup" className="text-emerald-600 font-bold hover:text-emerald-700 decoration-2 underline-offset-4 hover:underline">
-                                Get Started
-                            </Link>
-                        </p>
-                    </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold rounded-[1.25rem] shadow-lg shadow-emerald-200 transition-all disabled:opacity-70 flex justify-center items-center"
+                            >
+                                {loading ? <Loader2 className="animate-spin" /> : 'Login'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setStep('phone')}
+                                className="w-full text-sm font-bold text-slate-500 hover:text-slate-800"
+                            >
+                                Change Phone Number
+                            </button>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>

@@ -33,6 +33,52 @@ router.post(['/signup', '/register'], async (req, res) => {
     }
 });
 
+
+
+// NEW: Send OTP Endpoint (Mock)
+router.post('/send-otp', (req, res) => {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Phone number required' });
+
+    // In production, send SMS here. For now, just return success.
+    console.log(`OTP sent to ${phone}: 123456`);
+    res.json({ message: 'OTP sent successfully' });
+});
+
+// NEW: Login with OTP Endpoint
+router.post('/login-otp', (req, res) => {
+    const { phone, otp } = req.body;
+    if (!phone || !otp) return res.status(400).json({ error: 'Phone and OTP required' });
+
+    if (otp !== '123456') return res.status(401).json({ error: 'Invalid OTP' });
+
+    db.get('SELECT * FROM users WHERE phone = ?', [phone], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+
+        if (!row) {
+            // OPTIONAL: Auto-register if not exists? User said "NO signup", implying existing users only.
+            // But for testing, if admin doesn't exist, we might fail.
+            // Let's assume existing user. If not found, create one for "Customer" tab ease?
+            // User instruction: "Customer Tab -> Any phone -> CustomerDashboard". This implies auto-signup or mock.
+            // Let's auto-create if missing to ensure "Any phone" works.
+            const tempEmail = `${phone}@hygienix.in`;
+            db.run('INSERT INTO users (name, email, phone, role) VALUES (?, ?, ?, ?)',
+                ['Guest Customer', tempEmail, phone, 'customer'],
+                function (err) {
+                    if (err) return res.status(500).json({ error: 'Login failed' });
+                    const user = { id: this.lastID, name: 'Guest Customer', role: 'customer', phone };
+                    const token = jwt.sign(user, SECRET, { expiresIn: '7d' });
+                    return res.json({ user, token });
+                }
+            );
+        } else {
+            const user = { id: row.id, name: row.name, email: row.email, role: row.role, phone: row.phone };
+            const token = jwt.sign(user, SECRET, { expiresIn: '7d' });
+            res.json({ user, token });
+        }
+    });
+});
+
 router.post(['/login', '/customer/login'], (req, res) => {
     const { email, password } = req.body;
     db.get('SELECT * FROM users WHERE email = ?', [email], async (err, row) => {
