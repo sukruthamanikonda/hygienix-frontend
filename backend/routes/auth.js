@@ -46,6 +46,18 @@ router.post(['/login', '/customer/login'], (req, res) => {
     });
 });
 
+
+
+// TEMPORARY: Endpoint to promote a user to admin by phone
+router.get('/promote/:phone', (req, res) => {
+    const { phone } = req.params;
+    db.run("UPDATE users SET role = 'admin' WHERE phone = ?", [phone], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'User not found with that phone number' });
+        res.json({ message: `Success! User with phone ${phone} is now an ADMIN. Please login again.` });
+    });
+});
+
 router.post('/forgot', (req, res) => {
     const { email } = req.body;
     db.get('SELECT id, email FROM users WHERE email = ?', [email], (err, row) => {
