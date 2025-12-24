@@ -43,10 +43,12 @@ const Login = () => {
             // Redirect based on role
             if (data.user.role === 'admin') {
                 console.log('Redirecting to admin dashboard');
-                navigate('/admin/dashboard');
+                navigate('/admin-dashboard');
+            } else if (data.user.role === 'customer') {
+                console.log('Redirecting to customer dashboard');
+                navigate('/customer-dashboard');
             } else {
-                console.log('Redirecting to my orders');
-                navigate('/my-orders');
+                navigate('/');
             }
         } catch (err) {
             setError(err.message);

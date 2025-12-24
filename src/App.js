@@ -34,7 +34,7 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route
-                path="/my-orders"
+                path="/customer-dashboard"
                 element={
                   <ProtectedRoute>
                     <MyOrders />
@@ -42,7 +42,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/dashboard"
+                path="/admin-dashboard"
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminDashboard />

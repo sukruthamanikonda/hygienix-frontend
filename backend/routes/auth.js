@@ -40,7 +40,7 @@ router.post(['/login', '/customer/login'], (req, res) => {
         const ok = await bcrypt.compare(password, row.password_hash);
         if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-        const user = { id: row.id, name: row.name, email: row.email, role: row.role };
+        const user = { id: row.id, name: row.name, email: row.email, role: row.role, phone: row.phone };
         const token = jwt.sign(user, SECRET, { expiresIn: '7d' });
         res.json({ user, token });
     });

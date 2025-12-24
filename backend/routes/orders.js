@@ -68,4 +68,30 @@ router.post('/', tryAuthenticateToken, (req, res) => {
     );
 });
 
+router.patch('/:id/status', authenticateToken, isAdmin, (req, res) => {
+    const { status } = req.body;
+    if (!['completed', 'cancelled'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    db.run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'Order not found' });
+
+        // Notify customer if completed
+        if (status === 'completed') {
+            db.get('SELECT customer_phone, customer_name FROM orders WHERE id = ?', [req.params.id], (err, row) => {
+                if (row && row.customer_phone) {
+                    sendWhatsApp({
+                        to: row.customer_phone,
+                        body: `Hi ${row.customer_name}, your order #${req.params.id} is marked as COMPLETED. Thank you for choosing Hygienix!`
+                    });
+                }
+            });
+        }
+
+        res.json({ message: 'Status updated' });
+    });
+});
+
 module.exports = router;
