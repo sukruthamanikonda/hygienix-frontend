@@ -74,6 +74,14 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
+            {/* Error Display */}
+            {error && (
+                <div className="mb-6 bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <span className="font-bold">{error}</span>
+                </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 {stats.map((stat, i) => (
@@ -134,21 +142,23 @@ const AdminDashboard = () => {
                                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-8 py-6 font-bold text-emerald-600">#{order.id}</td>
                                     <td className="px-8 py-6">
-                                        <div className="font-bold text-gray-900">{order.customer_name}</div>
+                                        <div className="font-bold text-gray-900">{order.customer_name || 'Anonymous'}</div>
                                         <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                                            <Phone className="w-3 h-3" /> {order.customer_phone}
+                                            <Phone className="w-3 h-3" /> {order.customer_phone || 'N/A'}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="font-medium text-gray-700">
-                                            {order.items?.[0]?.service || 'Cleaning Service'}
+                                            {order.items?.[0]?.serviceName || order.items?.[0]?.service || 'Cleaning Service'}
                                         </div>
                                         <div className="flex items-start gap-1 text-sm text-gray-500 mt-1 max-w-xs truncate">
-                                            <MapPin className="w-3 h-3 mt-1 shrink-0" /> {order.address}
+                                            <MapPin className="w-3 h-3 mt-1 shrink-0" /> {order.address || 'Address not specified'}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <div className="font-bold text-gray-800">{new Date(order.service_date).toLocaleDateString()}</div>
+                                        <div className="font-bold text-gray-800">
+                                            {order.service_date ? new Date(order.service_date).toLocaleDateString() : 'N/A'}
+                                        </div>
                                         <div className="text-xs text-gray-400 font-medium uppercase mt-1">{order.items?.[0]?.timeSlot || 'Standard Slot'}</div>
                                     </td>
                                     <td className="px-8 py-6">
@@ -156,11 +166,11 @@ const AdminDashboard = () => {
                                             order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                                                 'bg-red-100 text-red-700'
                                             }`}>
-                                            {order.status}
+                                            {order.status || 'pending'}
                                         </span>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <span className="text-lg font-extrabold text-gray-900">₹{order.total}</span>
+                                        <span className="text-lg font-extrabold text-gray-900">₹{order.total || 0}</span>
                                     </td>
                                 </tr>
                             )) : (
