@@ -79,10 +79,17 @@ router.post('/login-otp', (req, res) => {
     });
 });
 
+
 router.post(['/login', '/customer/login'], (req, res) => {
-    const { email, password } = req.body;
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, row) => {
-        if (err || !row) return res.status(401).json({ error: 'Invalid credentials' });
+    const { identifier, password, email } = req.body; // identifier can be email or phone
+    const loginId = identifier || email;
+
+    if (!loginId || !password) return res.status(400).json({ error: 'Email/Phone and password required' });
+
+    db.get('SELECT * FROM users WHERE email = ? OR phone = ?', [loginId, loginId], async (err, row) => {
+        if (err) return res.status(500).json({ error: 'Server error' });
+        if (!row) return res.status(401).json({ error: 'Invalid credentials' });
+
         const ok = await bcrypt.compare(password, row.password_hash);
         if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -93,6 +100,21 @@ router.post(['/login', '/customer/login'], (req, res) => {
 });
 
 
+
+// TEMPORARY: Set password for a user by phone (Helper for Admin)
+router.get('/set-password/:phone/:password', async (req, res) => {
+    const { phone, password } = req.params;
+    try {
+        const hash = await bcrypt.hash(password, 10);
+        db.run("UPDATE users SET password_hash = ? WHERE phone = ?", [hash, phone], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'User not found' });
+            res.json({ message: `Password updated for ${phone}.` });
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // TEMPORARY: Endpoint to promote a user to admin by phone
 router.get('/promote/:phone', (req, res) => {

@@ -42,8 +42,8 @@ router.post('/', tryAuthenticateToken, (req, res) => {
             db.run('INSERT INTO notifications (type, title, message, meta) VALUES (?, ?, ?, ?)', ['order', 'New Booking', `Order #${orderId} from ${name}`, JSON.stringify({ orderId })]);
 
             const msg = `Booking #${orderId} confirmed for ${name}! Total: ₹${total}.`;
-            if (customer_phone) sendWhatsApp({ to: customer_phone, body: `Hi ${name}, ${msg}` });
-            if (adminNumber) sendWhatsApp({ to: adminNumber, body: `New Order #${orderId} from ${name}.` });
+            // if (customer_phone) sendWhatsApp({ to: customer_phone, body: `Hi ${name}, ${msg}` });
+            // if (adminNumber) sendWhatsApp({ to: adminNumber, body: `New Order #${orderId} from ${name}.` });
 
             if (customer_email || process.env.ADMIN_EMAIL) {
                 const adminEmail = process.env.ADMIN_EMAIL || 'admin@hygienix.in';
@@ -82,10 +82,10 @@ router.patch('/:id/status', authenticateToken, isAdmin, (req, res) => {
         if (status === 'completed') {
             db.get('SELECT customer_phone, customer_name FROM orders WHERE id = ?', [req.params.id], (err, row) => {
                 if (row && row.customer_phone) {
-                    sendWhatsApp({
-                        to: row.customer_phone,
-                        body: `Hi ${row.customer_name}, your order #${req.params.id} is marked as COMPLETED. Thank you for choosing Hygienix!`
-                    });
+                    // sendWhatsApp({ 
+                    //     to: row.customer_phone, 
+                    //     body: `Hi ${row.customer_name}, your order #${req.params.id} is marked as COMPLETED. Thank you for choosing Hygienix!` 
+                    // });
                 }
             });
         }
