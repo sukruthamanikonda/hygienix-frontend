@@ -30,13 +30,15 @@ const AdminDashboard = () => {
     const fetchOrders = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/admin/orders`, {
+            const res = await fetch(`${API_BASE}/orders/admin`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
                 const data = await res.json();
                 setOrders(data);
+            } else {
+                console.error('Failed to fetch orders:', res.status);
             }
         } catch (error) {
             console.error('Fetch error:', error);
@@ -48,7 +50,7 @@ const AdminDashboard = () => {
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
+            await fetch(`${API_BASE}/orders/${orderId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
